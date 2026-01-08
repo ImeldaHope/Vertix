@@ -11,6 +11,7 @@ export default function Profile() {
   const saved = useProfileStore((s) => s.saved);
   const toggleCreatorMode = useProfileStore((s) => s.toggleCreatorMode);
   const creatorMode = useProfileStore((s) => s.creatorMode);
+  const navigation = (null as any) as any;
 
   return (
     <View style={styles.container}>
@@ -28,6 +29,11 @@ export default function Profile() {
       <View style={{ marginVertical: 12 }}>
         <Button title={creatorMode ? 'Disable Creator Mode' : 'Enable Creator Mode'} onPress={toggleCreatorMode} />
       </View>
+      {creatorMode && (
+        <View style={{ marginVertical: 8 }}>
+          <Button title="Creator Dashboard" onPress={() => (navigation as any).navigate('Creator')} />
+        </View>
+      )}
 
       <Text style={styles.section}>Saved</Text>
       <FlatList data={saved} keyExtractor={(i) => i.id} renderItem={({ item }) => <Text style={styles.item}>{item.id}</Text>} />
