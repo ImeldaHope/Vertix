@@ -1,4 +1,5 @@
 import create from 'zustand';
+import * as profileApi from '../api/profile';
 
 type WatchedItem = {
   id: string;
@@ -12,21 +13,52 @@ type ProfileState = {
   watched: WatchedItem[];
   saved: { id: string; uri: string }[];
   creatorMode: boolean;
-  addWatched: (item: WatchedItem) => void;
-  saveVideo: (id: string, uri: string) => void;
+  addWatched: (item: WatchedItem) => Promise<void>;
+  saveVideo: (id: string, uri?: string) => Promise<void>;
   toggleCreatorMode: () => void;
   setCoinBalance: (n: number) => void;
+  loadFromServer: () => Promise<void>;
 };
 
-export const useProfileStore = create<ProfileState>((set) => ({
+export const useProfileStore = create<ProfileState>((set, get) => ({
   coinBalance: 0,
   watched: [],
   saved: [],
   creatorMode: false,
-  addWatched: (item) => set((s) => ({ watched: [item, ...s.watched].slice(0, 200) })),
-  saveVideo: (id, uri) => set((s) => ({ saved: [{ id, uri }, ...s.saved.filter((v) => v.id !== id)] })),
+  addWatched: async (item) => {
+    set((s) => ({ watched: [item, ...s.watched].slice(0, 200) }));
+    try {
+      await profileApi.reportWatched(item.id, item.seconds);
+    } catch (e) {
+      // server may fail; keep local history for reconciliation
+      console.warn('reportWatched failed', e);
+    }
+  },
+  saveVideo: async (id, uri) => {
+    set((s) => ({ saved: [{ id, uri: uri || '' }, ...s.saved.filter((v) => v.id !== id)] }));
+    try {
+      await profileApi.saveVideo(id);
+    } catch (e) {
+      console.warn('saveVideo failed', e);
+    }
+  },
   toggleCreatorMode: () => set((s) => ({ creatorMode: !s.creatorMode })),
-  setCoinBalance: (n) => set({ coinBalance: n })
+  setCoinBalance: (n) => set({ coinBalance: n }),
+  loadFromServer: async () => {
+    try {
+      const [profileResp, coinsResp] = await Promise.all([profileApi.getProfile(), profileApi.getCoins()]);
+      const profile = profileResp.data;
+      const coins = coinsResp.data?.coins ?? 0;
+      set({
+        coinBalance: coins,
+        saved: profile.saved || [],
+        watched: profile.watched || [],
+        creatorMode: profile.creatorMode || false
+      });
+    } catch (e) {
+      console.warn('loadFromServer failed', e);
+    }
+  }
 }));
 
 export default useProfileStore;
