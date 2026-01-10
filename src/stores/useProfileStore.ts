@@ -18,6 +18,8 @@ type ProfileState = {
   toggleCreatorMode: () => void;
   setCoinBalance: (n: number) => void;
   loadFromServer: () => Promise<void>;
+  receipts: any[];
+  addReceipt: (r: any) => void;
 };
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
@@ -34,6 +36,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       console.warn('reportWatched failed', e);
     }
   },
+  addCoins: (n: number) => set((s) => ({ coinBalance: s.coinBalance + n })),
+  receipts: [],
+  addReceipt: (r) => set((s) => ({ receipts: [r, ...s.receipts].slice(0, 200) })),
   saveVideo: async (id, uri) => {
     set((s) => ({ saved: [{ id, uri: uri || '' }, ...s.saved.filter((v) => v.id !== id)] }));
     try {
