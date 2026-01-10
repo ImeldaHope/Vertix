@@ -12,7 +12,31 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "GADApplicationIdentifier": "${GOOGLE_MOBILE_ADS_APP_ID}",
+        "AppLovinSdkKey": "${APPLOVIN_SDK_KEY}"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "manifest": {
+        "application": {
+          "meta-data": [
+            {
+              "android:name": "com.google.android.gms.ads.APPLICATION_ID",
+              "android:value": "${GOOGLE_MOBILE_ADS_APP_ID}"
+            },
+            {
+              "android:name": "applovin.sdk.key",
+              "android:value": "${APPLOVIN_SDK_KEY}"
+            }
+          ]
+        }
+      }
     }
   }
 }
