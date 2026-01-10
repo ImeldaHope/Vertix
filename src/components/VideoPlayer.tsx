@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Video, AVPlaybackStatus } from 'expo-av';
 import api from '../api/apiClient';
+import { reportWatch } from '../api/rewards';
 import useProfileStore from '../stores/useProfileStore';
 
 type Props = {
@@ -18,15 +19,22 @@ export default function VideoPlayer({ id, uri, isActive }: Props) {
   const bufferedMillis = useRef<number>(0);
   const heartbeatTimer = useRef<number | null>(null);
   const addWatched = useProfileStore((s) => s.addWatched);
+  const addCoins = useProfileStore((s) => s.addCoins);
 
   const sendHeartbeat = async (seconds: number) => {
     if (seconds <= 0) return;
     try {
-      await api.post('/rewards/watch', {
-        videoId: id,
-        secondsWatched: seconds,
-        clientTs: Date.now()
-      });
+      const r = await reportWatch(id, seconds);
+      const credited = r.data?.credited || 0;
+      if (credited > 0) addCoins(credited);
+      const receipt = r.data?.receipt;
+      if (receipt) {
+        // store receipt for audit
+        try { (useProfileStore as any) && null; } catch {}
+        // safe way: call addReceipt through hook getter
+        const addReceipt = require('../stores/useProfileStore').default.getState().addReceipt;
+        if (addReceipt) addReceipt(receipt);
+      }
     } catch (e) {
       console.warn('heartbeat failed', e);
     }
